@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Recoil Room | Grand Opening Soon</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Inter font -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d0d0d;
+            color: #f7f7f7;
+            overflow-x: hidden;
+        }
+        .text-red-600-custom {
+            color: #dc2626; /* Consistent red accent */
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Firebase SDK Imports -->
+    <script type="module">
+        // Global variables provided by the Canvas environment
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Initialize Firebase
+        let app, db, auth;
+        let userId = 'anonymous';
+
+        try {
+            if (Object.keys(firebaseConfig).length > 0) {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                setLogLevel('debug'); // Enable debug logging for Firestore
+
+                // Authentication setup
+                async function authenticate() {
+                    try {
+                        if (initialAuthToken) {
+                            await signInWithCustomToken(auth, initialAuthToken);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                        userId = auth.currentUser ? auth.currentUser.uid : crypto.randomUUID();
+                        console.log("Firebase initialized. User ID:", userId);
+                    } catch (error) {
+                        console.error("Firebase Auth Error:", error);
+                        userId = crypto.randomUUID();
+                    }
+                }
+                authenticate();
+            } else {
+                console.warn("Firebase config is missing. Firestore operations will be mocked.");
+            }
+        } catch (e) {
+            console.error("Error initializing Firebase:", e);
+        }
+
+        // Global function to handle form submission
+        window.handleSignUp = async function(event) {
+            event.preventDefault();
+            const emailInput = document.getElementById('email');
+            const email = emailInput.value;
+            const statusMessage = document.getElementById('status-message');
+            statusMessage.textContent = 'Subscribing...';
+            statusMessage.classList.remove('hidden', 'text-green-500', 'text-red-500');
+            statusMessage.classList.add('text-yellow-500');
+
+            if (!email) {
+                statusMessage.textContent = 'Please enter a valid email address.';
+                statusMessage.classList.remove('text-yellow-500');
+                statusMessage.classList.add('text-red-500');
+                return;
+            }
+
+            const subscriptionData = {
+                email: email,
+                timestamp: new Date(),
+                userId: userId,
+                appId: appId
+            };
+
+            try {
+                if (db) {
+                    // Firestore path for public data (shared across all users of the app)
+                    const collectionPath = `/artifacts/${appId}/public/data/email_subscribers`;
+                    await addDoc(collection(db, collectionPath), subscriptionData);
+
+                    statusMessage.textContent = 'Success! You are now on the VIP list.';
+                    statusMessage.classList.remove('text-yellow-500');
+                    statusMessage.classList.add('text-green-500');
+                    emailInput.value = ''; // Clear input on success
+                } else {
+                    // Mock success if Firebase isn't initialized
+                    console.warn("Firestore not initialized. Mocking subscription save:", subscriptionData);
+                    statusMessage.textContent = 'Success! You are now on the VIP list (Mock Save).';
+                    statusMessage.classList.remove('text-yellow-500');
+                    statusMessage.classList.add('text-green-500');
+                    emailInput.value = ''; // Clear input on success
+                }
+            } catch (error) {
+                console.error("Error saving subscription:", error);
+                statusMessage.textContent = 'Subscription failed. Please try again later.';
+                statusMessage.classList.remove('text-yellow-500');
+                statusMessage.classList.add('text-red-500');
+            }
+        };
+    </script>
+
+    <!-- Header & Navigation (Placeholder for future links) -->
+    <header class="p-4 bg-[#141414] shadow-lg sticky top-0 z-10 border-b border-red-600-custom">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <h1 class="text-3xl font-extrabold tracking-widest text-red-600-custom uppercase">
+                THE RECOIL ROOM
+            </h1>
+            <nav class="hidden md:flex space-x-6 text-sm font-medium">
+                <a href="#features" class="hover:text-red-600-custom transition duration-200">Lanes & Features</a>
+                <a href="#mission" class="hover:text-red-600-custom transition duration-200">Our Mission</a>
+                <a href="#signup" class="hover:text-red-600-custom transition duration-200">VIP Sign-Up</a>
+            </nav>
+            <button class="md:hidden text-2xl text-red-600-custom">☰</button>
+        </div>
+    </header>
+
+    <main>
+        <!-- 1. Hero Section -->
+        <section class="relative h-screen flex items-center justify-center text-center p-4">
+            <!-- Background Image -->
+            <div class="absolute inset-0 bg-cover bg-center" style="background-image: url('https://placehold.co/1920x1080/0d0d0d/808080?text=Modern+Indoor+Shooting+Lanes');">
+                <!-- Fallback/Stock Image: A modern, sleek view of shooting lanes -->
+                <img src="https://images.unsplash.com/photo-1627993077920-d336a18d3632?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NTQzMjB8MHwxfHNlYXJjaHwxfHxzaG9vdGluZyUyMHJhbmdlJTIwaW5kb29yfGVufDB8fHx8MTcwMTg4NTQ3OXww&ixlib=rb-4.0.3&q=80&w=1920"
+                     alt="A sleek, modern indoor shooting range with four lanes."
+                     class="w-full h-full object-cover absolute inset-0 opacity-40">
+            </div>
+
+            <div class="relative z-10 bg-black/60 p-8 md:p-12 rounded-xl border-4 border-red-600-custom max-w-4xl mx-auto shadow-[0_0_40px_rgba(220,38,38,0.7)]">
+                <span class="text-xl md:text-2xl font-bold tracking-wider mb-2 block text-red-600-custom">GRAND OPENING SOON</span>
+                <h2 class="text-5xl md:text-8xl font-black uppercase leading-tight">
+                    THE RECOIL ROOM
+                </h2>
+                <p class="mt-4 text-lg md:text-xl font-light max-w-2xl mx-auto">
+                    **Precision, Comfort, Safety.** Your premier 4-lane indoor shooting experience.
+                </p>
+                <a href="#signup" class="mt-8 inline-block bg-red-600-custom text-white font-bold py-3 px-8 rounded-lg text-lg uppercase tracking-wider hover:bg-red-700 transition duration-300 transform hover:scale-105 shadow-xl">
+                    Join the VIP List
+                </a>
+            </div>
+        </section>
+
+        <!-- 2. Features Section -->
+        <section id="features" class="py-20 px-4 bg-[#1a1a1a]">
+            <div class="max-w-7xl mx-auto text-center">
+                <h3 class="text-4xl font-bold mb-12 uppercase border-b-2 border-red-600-custom inline-block pb-2">Why The Recoil Room?</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+
+                    <!-- Feature 1: Four Lanes -->
+                    <div class="bg-[#242424] p-8 rounded-xl shadow-xl border-t-4 border-red-600-custom transition duration-300 hover:scale-[1.02]">
+                        <svg class="w-12 h-12 mx-auto mb-4 text-red-600-custom" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2l2 2 2-2h2a2 2 0 002-2v-2m-8-2h8m-8-4h8"></path></svg>
+                        <h4 class="text-2xl font-semibold mb-3">4 State-of-the-Art Lanes</h4>
+                        <p class="text-gray-400">Enjoy dedicated space with modern target retrieval systems and ballistic protection.</p>
+                    </div>
+
+                    <!-- Feature 2: Safety First -->
+                    <div class="bg-[#242424] p-8 rounded-xl shadow-xl border-t-4 border-red-600-custom transition duration-300 hover:scale-[1.02]">
+                        <svg class="w-12 h-12 mx-auto mb-4 text-red-600-custom" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.101A7.001 7.001 0 003.58 6.49M14.28 2.01l.86 1.83m-1.72 2.66l-1.35 1.76M11 12H9M7 12H5"></path></svg>
+                        <h4 class="text-2xl font-semibold mb-3">Certified RSO Staff</h4>
+                        <p class="text-gray-400">Our Range Safety Officers prioritize a safe, comfortable, and controlled environment for all skill levels.</p>
+                    </div>
+
+                    <!-- Feature 3: Climate Control -->
+                    <div class="bg-[#242424] p-8 rounded-xl shadow-xl border-t-4 border-red-600-custom transition duration-300 hover:scale-[1.02]">
+                        <svg class="w-12 h-12 mx-auto mb-4 text-red-600-custom" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                        <h4 class="text-2xl font-semibold mb-3">HEPA Air Filtration</h4>
+                        <p class="text-gray-400">Maintain ideal shooting conditions with advanced air filtration and climate control systems.</p>
+                    </div>
+
+                    <!-- Feature 4: Retail & Gear -->
+                    <div class="bg-[#242424] p-8 rounded-xl shadow-xl border-t-4 border-red-600-custom transition duration-300 hover:scale-[1.02]">
+                        <svg class="w-12 h-12 mx-auto mb-4 text-red-600-custom" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+                        <h4 class="text-2xl font-semibold mb-3">Retail & Rentals</h4>
+                        <p class="text-gray-400">Shop for premium accessories, ammunition, and rent a wide variety of firearms.</p>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. Mission Statement / Anticipation Section -->
+        <section id="mission" class="py-20 px-4">
+            <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                
+                <!-- Content Block -->
+                <div class="lg:order-1">
+                    <span class="text-lg font-medium text-red-600-custom mb-2 block uppercase">Our Commitment</span>
+                    <h3 class="text-4xl md:text-5xl font-extrabold mb-6 leading-tight">
+                        Built for Enthusiasts, Designed for Safety.
+                    </h3>
+                    <p class="text-gray-300 mb-6 text-lg">
+                        The Recoil Room is more than just a range; it's a dedicated facility where precision shooters and first-timers alike can hone their skills in a secure, controlled, and climate-perfect environment. We are focused on providing a clean, modern, and professional experience that sets the bar for indoor shooting.
+                    </p>
+                    <ul class="space-y-3 text-gray-400">
+                        <li class="flex items-center"><span class="text-red-600-custom font-bold mr-2 text-xl">&bull;</span> Modern, well-lit shooting stalls.</li>
+                        <li class="flex items-center"><span class="text-red-600-custom font-bold mr-2 text-xl">&bull;</span> Competitive pricing and membership options.</li>
+                        <li class="flex items-center"><span class="text-red-600-custom font-bold mr-2 text-xl">&bull;</span> Training and certification classes available.</li>
+                    </ul>
+                </div>
+
+                <!-- Image Block -->
+                <div class="lg:order-2">
+                    <!-- Stock Image: Close-up of bullet impact on a target -->
+                    <img src="https://images.unsplash.com/photo-1627993077920-d336a18d3632?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NTQzMjB8MHwxfHNlYXJjaHwyfHxzaG9vdGluZyUyMHJhbmdlJTIwdGFyZ2V0fGVufDB8fHx8MTcwMTg4NTQ4NXww&ixlib=rb-4.0.3&q=80&w=800"
+                         onerror="this.onerror=null;this.src='https://placehold.co/800x533/242424/f7f7f7?text=Target+Practice'"
+                         alt="A target with recent bullet impacts showing precision."
+                         class="rounded-xl shadow-2xl border-2 border-red-600-custom w-full">
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. VIP Sign-Up/Footer -->
+        <section id="signup" class="bg-[#141414] py-16 px-4 border-t border-red-600-custom">
+            <div class="max-w-xl mx-auto text-center">
+                <h3 class="text-3xl font-bold mb-4">Don't Miss The Shot!</h3>
+                <p class="text-gray-400 mb-8 text-lg">
+                    Join our VIP list now to receive exclusive launch details, membership discounts, and special event invitations before we open our doors.
+                </p>
+
+                <form onsubmit="handleSignUp(event)" class="flex flex-col md:flex-row gap-4">
+                    <input type="email" id="email" required placeholder="Enter Your Email Address"
+                           class="flex-grow p-3 rounded-lg bg-[#242424] text-white border border-gray-600 focus:border-red-600-custom focus:ring-1 focus:ring-red-600-custom transition duration-200">
+                    <button type="submit"
+                            class="bg-red-600-custom text-white font-bold py-3 px-6 rounded-lg uppercase tracking-wider hover:bg-red-700 transition duration-300 transform hover:scale-[1.01] flex-shrink-0">
+                        Sign Up
+                    </button>
+                </form>
+
+                <p id="status-message" class="mt-4 text-center hidden text-sm font-medium"></p>
+                
+                <p class="text-gray-500 text-xs mt-8">
+                    &copy; 2025 The Recoil Room. All Rights Reserved. | 4-Lane Indoor Range.
+                </p>
+            </div>
+        </section>
+
+    </main>
+</body>
+</html>
